@@ -34,7 +34,7 @@ void ACGPlayerCharacter::MoveForward(float Value)
 
 void ACGPlayerCharacter::MoveRight(float Value)
 {
-	AddMovementInput(GetActorForwardVector() * Value);
+	AddMovementInput(GetActorRightVector() * Value);
 }
 
 void ACGPlayerCharacter::BeginCrouch()
