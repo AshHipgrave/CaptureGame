@@ -8,6 +8,10 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+#include "DrawDebugHelpers.h"
+
+static int32 DebugWeaponDrawing = 0;
+FAutoConsoleVariableRef CVARDebugWeaponDrawing(TEXT("CAP.DebugWeapons"), DebugWeaponDrawing, TEXT("Draw debug lines and hit boxes for weapons"), ECVF_Cheat);
 
 ACGProjectileWeaponBase::ACGProjectileWeaponBase()
 {
@@ -17,8 +21,8 @@ ACGProjectileWeaponBase::ACGProjectileWeaponBase()
 	RateOfFire = 600.0f;
 	BaseWeaponDamage = 20.0f;
 
-	TracerTargetName = "Target";
-	MuzzleSocketName = "MuzzleSocket";
+	TracerTargetName = "BeamEnd";
+	MuzzleSocketName = "MuzzleFlashSocket";
 
 	SetReplicates(true);
 
@@ -116,6 +120,11 @@ void ACGProjectileWeaponBase::Fire()
 			PlayWeaponImpactEffects(HitSurfaceType, HitResult.ImpactPoint);
 
 			TraceHitPoint = HitResult.ImpactPoint;
+
+			if (DebugWeaponDrawing == 1)
+			{
+				DrawDebugSphere(GetWorld(), )
+			}
 		}
 
 		PlayWeaponFireEffects(TraceHitPoint);
@@ -124,6 +133,11 @@ void ACGProjectileWeaponBase::Fire()
 		{
 			HitScanTrace.TraceTo = TraceHitPoint;
 			HitScanTrace.SurfaceType = HitSurfaceType;
+		}
+
+		if (DebugWeaponDrawing == 1)
+		{
+			DrawDebugLine(GetWorld(), EyeLocation, TraceHitPoint, FColor::White, false, 1.0f, 0, 1.0f);
 		}
 
 		LastFireTime = GetWorld()->TimeSeconds;
