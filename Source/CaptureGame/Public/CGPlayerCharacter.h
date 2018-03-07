@@ -8,6 +8,7 @@
 
 class UCameraComponent;
 class USpringArmComponent;
+class ACGProjectileWeaponBase;
 
 UCLASS()
 class CAPTUREGAME_API ACGPlayerCharacter : public ACharacter
@@ -36,6 +37,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USpringArmComponent* SpringArmComp;
 
+	UPROPERTY(Replicated)
+	ACGProjectileWeaponBase* CurrentWeapon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player")
+	TSubclassOf<ACGProjectileWeaponBase> DefaultStartWeapon;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "Player")
+	FName WeaponSocketName;
+
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
 	bool bIsDead;
 
@@ -46,4 +56,10 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual FVector GetPawnViewLocation() const override;	
+
+	UFUNCTION(BlueprintCallable, Category = "Player")
+	void StartWeaponFire();
+
+	UFUNCTION(BlueprintCallable, Category = "Player")
+	void StopWeaponFire();
 };

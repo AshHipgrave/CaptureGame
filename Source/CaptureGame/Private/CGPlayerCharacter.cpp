@@ -6,6 +6,8 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 
+#include "CGProjectileWeaponBase.h"
+
 ACGPlayerCharacter::ACGPlayerCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -18,6 +20,8 @@ ACGPlayerCharacter::ACGPlayerCharacter()
 	CameraComp->SetupAttachment(SpringArmComp);
 
 	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
+
+	WeaponSocketName = "WeaponSocket";
 }
 
 // Called when the game starts or when spawned
@@ -25,6 +29,19 @@ void ACGPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (Role == ROLE_Authority)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // Always spawn objects even if they're colliding with something (Otherwise the weapon wouldn't spawn because it's constantly colliding with the hand)
+
+		CurrentWeapon = GetWorld()->SpawnActor<ACGProjectileWeaponBase>(DefaultStartWeapon, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+		if (CurrentWeapon)
+		{
+			CurrentWeapon->SetOwner(this);
+			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponSocketName);
+		}
+	}
 }
 
 void ACGPlayerCharacter::MoveForward(float Value)
@@ -57,6 +74,8 @@ void ACGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	// TODO: Add Aim-Down-Sight support.
+
 	PlayerInputComponent->BindAxis("MoveForward", this, &ACGPlayerCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ACGPlayerCharacter::MoveRight);
 
@@ -67,6 +86,9 @@ void ACGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &ACGPlayerCharacter::EndCrouch);
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACGPlayerCharacter::Jump);
+
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACGPlayerCharacter::StartWeaponFire);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ACGPlayerCharacter::StopWeaponFire);
 }
 
 FVector ACGPlayerCharacter::GetPawnViewLocation() const
@@ -79,9 +101,26 @@ FVector ACGPlayerCharacter::GetPawnViewLocation() const
 	return Super::GetPawnViewLocation();
 }
 
+void ACGPlayerCharacter::StartWeaponFire()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->StartFire();
+	}
+}
+
+void ACGPlayerCharacter::StopWeaponFire()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->StopFire();
+	}
+}
+
 void ACGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ACGPlayerCharacter, bIsDead);
+	DOREPLIFETIME(ACGPlayerCharacter, CurrentWeapon);
 }
