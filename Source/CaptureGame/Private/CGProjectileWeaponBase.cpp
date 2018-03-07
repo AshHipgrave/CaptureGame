@@ -120,11 +120,6 @@ void ACGProjectileWeaponBase::Fire()
 			PlayWeaponImpactEffects(HitSurfaceType, HitResult.ImpactPoint);
 
 			TraceHitPoint = HitResult.ImpactPoint;
-
-			if (DebugWeaponDrawing == 1)
-			{
-				DrawDebugSphere(GetWorld(), )
-			}
 		}
 
 		PlayWeaponFireEffects(TraceHitPoint);
