@@ -21,11 +21,11 @@ public:
 protected:
 
 	virtual void BeginPlay() override;
-
+	
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerUpdateCaptureProgress(float DeltaTime);
-
-	void GetOverlappedCharacterCount(TArray<AActor*>& OverlappedActors);
+	
+	void GetNumOverlappingPlayers(uint32& OutNumBluePlayers, uint32& OutNumRedPlayers);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* MeshComp;
@@ -35,7 +35,7 @@ protected:
 	
 protected:
 	
-	UPROPERTY(EditInstanceOnly, Category = "Behaviour")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Behaviour")
 	TArray<float> CaptureRates;
 
 	UPROPERTY(Replicated)
@@ -46,17 +46,14 @@ protected:
 	UPROPERTY(Replicated)
 	FName DefendingTeam;
 
-	int32 NumOverlappedAllies;
-	int32 NumOverlappedEnemies;
+	UPROPERTY(Replicated)
+	FName CapturingTeam;
+
+	UPROPERTY(Replicated)
+	FName AttackingTeam;
 
 public:	
 
 	virtual void Tick(float DeltaTime) override;
-
-	UFUNCTION()
-	void HandleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	
-	UFUNCTION()
-	void HandleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	
 };

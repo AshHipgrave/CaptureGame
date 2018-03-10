@@ -126,6 +126,8 @@ FName ACGPlayerCharacter::GetTeamName()
 
 void ACGPlayerCharacter::SwitchTeam()
 {
+	/* Temp function, callable from the console to easily test team switching */
+
 	if (CurrentTeam.IsEqual("Blue"))
 	{
 		CurrentTeam = "Red";
