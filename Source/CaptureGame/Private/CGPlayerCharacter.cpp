@@ -22,6 +22,8 @@ ACGPlayerCharacter::ACGPlayerCharacter()
 	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
 	WeaponSocketName = "WeaponSocket";
+
+	CurrentTeam = "Blue";
 }
 
 // Called when the game starts or when spawned
@@ -114,6 +116,23 @@ void ACGPlayerCharacter::StopWeaponFire()
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StopFire();
+	}
+}
+
+FName ACGPlayerCharacter::GetTeamName()
+{
+	return CurrentTeam;
+}
+
+void ACGPlayerCharacter::SwitchTeam()
+{
+	if (CurrentTeam.IsEqual("Blue"))
+	{
+		CurrentTeam = "Red";
+	}
+	else
+	{
+		CurrentTeam = "Blue";
 	}
 }
 

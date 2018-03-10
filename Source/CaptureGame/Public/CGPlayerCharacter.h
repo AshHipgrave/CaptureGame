@@ -19,6 +19,10 @@ public:
 
 	ACGPlayerCharacter();
 
+private:
+
+	FName CurrentTeam;
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -48,7 +52,7 @@ protected:
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
 	bool bIsDead;
-
+	
 public:	
 
 	virtual void Tick(float DeltaTime) override;
@@ -62,4 +66,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Player")
 	void StopWeaponFire();
+
+	FName GetTeamName();
+
+	UFUNCTION(Exec)
+	void SwitchTeam(); //Temp function, callable from the console to easily test team switching
 };
