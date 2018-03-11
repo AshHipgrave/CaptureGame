@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "CGProjectileWeaponBase.generated.h"
 
-class UCameraShake;
+class UDamageType;
 class UParticleSystem;
 class USkeletalMeshComponent;
 
