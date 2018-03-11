@@ -23,6 +23,9 @@ ACGCapturePoint::ACGCapturePoint()
 
 	OverlapComp->SetHiddenInGame(false);
 
+	OverlapComp->OnComponentBeginOverlap.AddDynamic(this, &ACGCapturePoint::HandleBeginOverlap);
+	OverlapComp->OnComponentEndOverlap.AddDynamic(this, &ACGCapturePoint::HandleEndOverlap);
+
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CapturePointMeshComp"));
 	MeshComp->SetupAttachment(OverlapComp);
 
@@ -58,6 +61,16 @@ void ACGCapturePoint::Tick(float DeltaTime)
 float ACGCapturePoint::GetCurrentCapturePercentage()
 {
 	return CurrentCapturePercentage;
+}
+
+FName ACGCapturePoint::GetDefendingTeamName()
+{
+	if (DefendingTeam.IsEqual(""))
+	{
+		return CapturingTeam;
+	}
+
+	return DefendingTeam;
 }
 
 void ACGCapturePoint::ServerUpdateCaptureProgress_Implementation(float DeltaTime)
@@ -211,6 +224,26 @@ void ACGCapturePoint::GetNumOverlappingPlayers(uint32& OutNumBluePlayers, uint32
 				}
 			}
 		}
+	}
+}
+
+void ACGCapturePoint::HandleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+{
+	ACGPlayerCharacter* Player = Cast<ACGPlayerCharacter>(OtherActor);
+
+	if (Player)
+	{
+		Player->NotifyBeginOverlapCapturePoint(this);
+	}
+}
+
+void ACGCapturePoint::HandleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	ACGPlayerCharacter* Player = Cast<ACGPlayerCharacter>(OtherActor);
+
+	if (Player)
+	{
+		Player->NotifyEndOverlapCapturePoint(this);
 	}
 }
 

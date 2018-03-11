@@ -27,14 +27,20 @@ protected:
 	
 	void GetNumOverlappingPlayers(uint32& OutNumBluePlayers, uint32& OutNumRedPlayers);
 
+	UFUNCTION()
+	void HandleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+
+	UFUNCTION()
+	void HandleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+protected:
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* MeshComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UBoxComponent* OverlapComp;
-	
-protected:
-	
+
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Capture Behaviour")
 	TArray<float> CaptureRates;
 
@@ -58,4 +64,7 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Capture Behaviour")
 	float GetCurrentCapturePercentage();
+
+	UFUNCTION(BlueprintCallable, Category = "Capture Behaviour")
+	FName GetDefendingTeamName();
 };

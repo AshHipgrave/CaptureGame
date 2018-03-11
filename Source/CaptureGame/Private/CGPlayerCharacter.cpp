@@ -4,8 +4,10 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Net/UnrealNetwork.h"
 
+#include "CaptureGame.h"
 #include "CGProjectileWeaponBase.h"
 
 ACGPlayerCharacter::ACGPlayerCharacter()
@@ -21,6 +23,8 @@ ACGPlayerCharacter::ACGPlayerCharacter()
 
 	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
+	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_WEAPON, ECR_Ignore);
+
 	WeaponSocketName = "WeaponSocket";
 
 	CurrentTeam = "Blue";
@@ -34,7 +38,7 @@ void ACGPlayerCharacter::BeginPlay()
 	if (Role == ROLE_Authority)
 	{
 		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // Always spawn objects even if they're colliding with something (Otherwise the weapon wouldn't spawn because it's constantly colliding with the hand)
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 		CurrentWeapon = GetWorld()->SpawnActor<ACGProjectileWeaponBase>(DefaultStartWeapon, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 
@@ -143,5 +147,6 @@ void ACGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ACGPlayerCharacter, bIsDead);
+	DOREPLIFETIME(ACGPlayerCharacter, CurrentTeam);
 	DOREPLIFETIME(ACGPlayerCharacter, CurrentWeapon);
 }

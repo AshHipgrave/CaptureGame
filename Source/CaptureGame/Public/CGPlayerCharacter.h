@@ -8,6 +8,8 @@
 
 class UCameraComponent;
 class USpringArmComponent;
+
+class ACGCapturePoint;
 class ACGProjectileWeaponBase;
 
 UCLASS()
@@ -18,10 +20,6 @@ class CAPTUREGAME_API ACGPlayerCharacter : public ACharacter
 public:
 
 	ACGPlayerCharacter();
-
-private:
-
-	FName CurrentTeam;
 
 protected:
 
@@ -52,6 +50,9 @@ protected:
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
 	bool bIsDead;
+
+	UPROPERTY(Replicated)
+	FName CurrentTeam;
 	
 public:	
 
@@ -66,6 +67,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Player")
 	void StopWeaponFire();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Capture Points")
+	void NotifyBeginOverlapCapturePoint(ACGCapturePoint* CapturePoint);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Capture Points")
+	void NotifyEndOverlapCapturePoint(ACGCapturePoint* CapturePoint);
 
 	FName GetTeamName();
 
