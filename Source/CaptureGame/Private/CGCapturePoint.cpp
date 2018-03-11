@@ -11,10 +11,8 @@ ACGCapturePoint::ACGCapturePoint()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CapturePointMeshComp"));
-	RootComponent = MeshComp;
-
 	OverlapComp = CreateDefaultSubobject<UBoxComponent>(TEXT("CapturePointOverlapComp"));
+	RootComponent = OverlapComp;
 
 	OverlapComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	OverlapComp->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -25,8 +23,10 @@ ACGCapturePoint::ACGCapturePoint()
 
 	OverlapComp->SetHiddenInGame(false);
 
-	/* TODO: Calculate these based off of the number of overlapping players */
-	//CaptureRates.Add(5.0f);		// Takes 20 seconds for 1 Player to capture the point
+	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CapturePointMeshComp"));
+	MeshComp->SetupAttachment(OverlapComp);
+
+	//CaptureRates.Add(5.0f);	// Takes 20 seconds for 1 Player to capture the point
 	//CaptureRates.Add(6.25f);	// Takes 16 Seconds for 2 Players
 	//CaptureRates.Add(8.33f);	// Takes 12 Seconds for 3 Players
 	//CaptureRates.Add(12.5f);	// Takes 8 Seconds for 4 Players
@@ -53,6 +53,11 @@ void ACGCapturePoint::Tick(float DeltaTime)
 	{
 		ServerUpdateCaptureProgress(DeltaTime);
 	}
+}
+
+float ACGCapturePoint::GetCurrentCapturePercentage()
+{
+	return CurrentCapturePercentage;
 }
 
 void ACGCapturePoint::ServerUpdateCaptureProgress_Implementation(float DeltaTime)

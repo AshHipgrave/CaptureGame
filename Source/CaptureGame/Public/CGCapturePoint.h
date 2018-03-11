@@ -35,10 +35,10 @@ protected:
 	
 protected:
 	
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Behaviour")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Capture Behaviour")
 	TArray<float> CaptureRates;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Capture Behaviour")
 	float CurrentCapturePercentage;
 
 	float CurrentCaptureRate;
@@ -56,4 +56,6 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 	
+	UFUNCTION(BlueprintCallable, Category = "Capture Behaviour")
+	float GetCurrentCapturePercentage();
 };
