@@ -40,6 +40,8 @@ ACGCapturePoint::ACGCapturePoint()
 
 	CurrentCaptureRate = 0.0f;
 	CurrentCapturePercentage = 0.0f;
+
+	bReplicates = true;
 }
 
 void ACGCapturePoint::BeginPlay()
