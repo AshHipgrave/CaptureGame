@@ -10,15 +10,14 @@
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
 
-static int32 DebugWeaponDrawing = 0;
-FAutoConsoleVariableRef CVARDebugWeaponDrawing(TEXT("CAP.DebugWeapons"), DebugWeaponDrawing, TEXT("Draw debug lines and hit boxes for weapons"), ECVF_Cheat);
+#include "CaptureGame.h"
 
 ACGProjectileWeaponBase::ACGProjectileWeaponBase()
 {
 	MeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponSkeletalMeshComp"));
 	RootComponent = MeshComp;
 
-	RateOfFire = 600.0f;
+	RateOfFire = 600;
 	BaseWeaponDamage = 20.0f;
 
 	TracerTargetName = "BeamEnd";
@@ -55,6 +54,18 @@ void ACGProjectileWeaponBase::PlayWeaponFireEffects(FVector HitLocation)
 		if (TracerComponent)
 		{
 			TracerComponent->SetVectorParameter(TracerTargetName, HitLocation);
+		}
+	}
+
+	APawn* WeaponOwner = Cast<APawn>(GetOwner());
+
+	if (WeaponOwner)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(WeaponOwner->GetController());
+
+		if (PlayerController)
+		{
+			PlayerController->ClientPlayCameraShake(FireCameraShake);
 		}
 	}
 }
@@ -108,7 +119,7 @@ void ACGProjectileWeaponBase::Fire()
 
 		EPhysicalSurface HitSurfaceType = SurfaceType_Default;
 
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEndLocation, ECC_Visibility /* TODO: implement a custom collision channel for weapons*/, CollisionQueryParams))
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEndLocation, COLLISION_WEAPON, CollisionQueryParams))
 		{
 			AActor* HitActor = HitResult.GetActor();
 
@@ -129,12 +140,7 @@ void ACGProjectileWeaponBase::Fire()
 			HitScanTrace.TraceTo = TraceHitPoint;
 			HitScanTrace.SurfaceType = HitSurfaceType;
 		}
-
-		if (DebugWeaponDrawing == 1)
-		{
-			DrawDebugLine(GetWorld(), EyeLocation, TraceHitPoint, FColor::White, false, 1.0f, 0, 1.0f);
-		}
-
+		
 		LastFireTime = GetWorld()->TimeSeconds;
 	}
 }
