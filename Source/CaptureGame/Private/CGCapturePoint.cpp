@@ -143,7 +143,7 @@ void ACGCapturePoint::ServerUpdateCaptureProgress_Implementation(float DeltaTime
 		DefendingTeam = CapturingTeam;
 		CapturingTeam = "";
 
-		AttackingTeam = CapturingTeam.IsEqual("Blue") ? "Red" : "Blue";
+		AttackingTeam = GetDefendingTeamName().IsEqual("Blue") ? "Red" : "Blue";
 	}
 }
 
