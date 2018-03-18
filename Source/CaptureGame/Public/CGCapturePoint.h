@@ -25,7 +25,9 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerUpdateCaptureProgress(float DeltaTime);
 	
-	void GetNumOverlappingPlayers(uint32& OutNumBluePlayers, uint32& OutNumRedPlayers);
+	void GetNumOverlappingPlayers(uint8& OutNumBluePlayers, uint8& OutNumRedPlayers);
+
+	bool IsUncaptured();
 
 	UFUNCTION()
 	void HandleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
@@ -41,10 +43,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UBoxComponent* OverlapComp;
 
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Capture Behaviour")
+	FName CapturePointName;
+
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Capture Behaviour")
 	TArray<float> CaptureRates;
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Capture Behaviour")
+	UPROPERTY(Replicated, VisibleDefaultsOnly, BlueprintReadOnly, Category = "Capture Behaviour")
 	float CurrentCapturePercentage;
 
 	float CurrentCaptureRate;
@@ -53,10 +58,10 @@ protected:
 	FName DefendingTeam;
 
 	UPROPERTY(Replicated)
-	FName CapturingTeam;
+	FName AttackingTeam;
 
 	UPROPERTY(Replicated)
-	FName AttackingTeam;
+	FName CapturingTeam;
 
 public:	
 
@@ -67,4 +72,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Capture Behaviour")
 	FName GetDefendingTeamName();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Capture Behaviour")
+	void NotifyPointNeutralised(FName NeutralisingTeam);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Capture Behaviour")
+	void NotifyPointCaptured(FName CapuringTeam);
 };

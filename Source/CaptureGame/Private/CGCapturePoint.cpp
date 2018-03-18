@@ -29,19 +29,25 @@ ACGCapturePoint::ACGCapturePoint()
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CapturePointMeshComp"));
 	MeshComp->SetupAttachment(OverlapComp);
 
-	//CaptureRates.Add(5.0f);	// Takes 20 seconds for 1 Player to capture the point
-	//CaptureRates.Add(6.25f);	// Takes 16 Seconds for 2 Players
-	//CaptureRates.Add(8.33f);	// Takes 12 Seconds for 3 Players
-	//CaptureRates.Add(12.5f);	// Takes 8 Seconds for 4 Players
+	/* TODO: Calculate progmatically based off of the number of overlapping players */
+	CaptureRates.Add(5.0f);		// Takes 20 seconds for 1 Player to capture the point
+	CaptureRates.Add(6.25f);	// Takes 16 Seconds for 2 Players
+	CaptureRates.Add(8.33f);	// Takes 12 Seconds for 3 Players
+	CaptureRates.Add(12.5f);	// Takes 8 Seconds for 4 Players
 	
+	CapturePointName = "DefaultName";
+
 	DefendingTeam = "Neutral";
-	AttackingTeam = "";
 	CapturingTeam = "";
+	AttackingTeam = "";
 
 	CurrentCaptureRate = 0.0f;
 	CurrentCapturePercentage = 0.0f;
 
 	bReplicates = true;
+
+	NetUpdateFrequency = 66.0f;
+	MinNetUpdateFrequency = 33.0f;
 }
 
 void ACGCapturePoint::BeginPlay()
@@ -67,7 +73,7 @@ float ACGCapturePoint::GetCurrentCapturePercentage()
 
 FName ACGCapturePoint::GetDefendingTeamName()
 {
-	if (DefendingTeam.IsEqual(""))
+	if (DefendingTeam.IsEqual("Neutral"))
 	{
 		return CapturingTeam;
 	}
@@ -77,124 +83,73 @@ FName ACGCapturePoint::GetDefendingTeamName()
 
 void ACGCapturePoint::ServerUpdateCaptureProgress_Implementation(float DeltaTime)
 {
-	int32 CaptureSpeed = 0;
+	float CaptureSpeed = 0.0f;
 
-	uint32 BluePlayersInCaptureRange = 0;
-	uint32 RedPlayersInCaptureRange = 0;
+	uint8 NumAttackers = 0;
+	uint8 NumDefenders = 0; 
+	
+	uint8 RedPlayersInCaptureRange = 0;
+	uint8 BluePlayersInCaptureRange = 0;
 
 	GetNumOverlappingPlayers(BluePlayersInCaptureRange, RedPlayersInCaptureRange);
 
-	uint32 TotalPlayersInCaptureRange = BluePlayersInCaptureRange + RedPlayersInCaptureRange;
-
-	if (TotalPlayersInCaptureRange == 0)
+	if (BluePlayersInCaptureRange == RedPlayersInCaptureRange)
 	{
-		return; //Nobody is overlapping, do nothing
+		return;
 	}
 
-	// If we're neutral and nobody has started capturing the point then work out which team has the most players within 'Capture Range' and mark them as the capturing team
-	if (DefendingTeam.IsEqual("Neutral") && CapturingTeam.IsEqual(""))
+	if (IsUncaptured())
 	{
-		if (BluePlayersInCaptureRange > RedPlayersInCaptureRange)
-		{
-			CapturingTeam = "Blue";
-			
-			CaptureSpeed = (BluePlayersInCaptureRange - RedPlayersInCaptureRange);
-		}
-		else if (RedPlayersInCaptureRange > BluePlayersInCaptureRange)
-		{
-			CapturingTeam = "Red";
-
-			CaptureSpeed = (RedPlayersInCaptureRange - BluePlayersInCaptureRange);
-		}
-		else
-		{
-			// There is no majority, do nothing
-			return;
-		}
+		CapturingTeam = BluePlayersInCaptureRange > RedPlayersInCaptureRange ? "Blue" : "Red";
 	}
-	else
+	
+	NumAttackers = GetDefendingTeamName().IsEqual("Blue") ? RedPlayersInCaptureRange : BluePlayersInCaptureRange;
+	NumDefenders = GetDefendingTeamName().IsEqual("Blue") ? BluePlayersInCaptureRange : RedPlayersInCaptureRange;
+
+	if (CurrentCapturePercentage >= 100.0f && NumDefenders > NumAttackers)
 	{
-		// If we're being defended/captured from neutral, then work out the capture rate based off of the number of attackers vs. number of defenders
-
-		uint32 NumAttackers = 0;
-		uint32 NumDefenders = 0;
-
-		if (DefendingTeam.IsEqual("Blue") || CapturingTeam.IsEqual("Blue"))
-		{
-			NumAttackers = RedPlayersInCaptureRange;
-			NumDefenders = BluePlayersInCaptureRange;
-		}
-		else
-		{
-			NumAttackers = BluePlayersInCaptureRange;
-			NumDefenders = RedPlayersInCaptureRange;
-		}
-
-		if (CurrentCapturePercentage >= 100.0f && NumDefenders > NumAttackers)
-		{
-			// The team with the majority already owns the point 100% - Don't do anything
-
-			return;
-		}
-		else
-		{
-			CaptureSpeed = NumDefenders - NumAttackers;
-		}
+		return;
 	}
+
+	//Only allow a majority of +/- 4 players per team to influence the capture rate
+	CaptureSpeed = FMath::Clamp((NumDefenders - NumAttackers), -4, 4);
+
+	uint8 CaptureSpeedIdx = 0;
 
 	if (CaptureSpeed < 0)
 	{
-		// The point is being neutralised (The point is already owned and there are more attackers than defenders)
-		CurrentCapturePercentage -= 5.0f * DeltaTime;
+		CaptureSpeedIdx = (CaptureSpeed * -1) - 1;
+
+		CurrentCapturePercentage -= CaptureRates[CaptureSpeedIdx] * DeltaTime;
 	}
 	else if (CaptureSpeed > 0)
 	{
-		// The point is being captured from neutral
-		CurrentCapturePercentage += 5.0f * DeltaTime;
+		CaptureSpeedIdx = CaptureSpeed - 1;
+
+		CurrentCapturePercentage += CaptureRates[CaptureSpeedIdx] * DeltaTime;
 	}
 
-	FString CaptureProgressStr = FString::SanitizeFloat(CurrentCapturePercentage);
-	UE_LOG(LogTemp, Log, TEXT("Capture Progress = %s"), *CaptureProgressStr);
-
-	// Has the point been either neutralised or captured?
 	if (CurrentCapturePercentage <= 0.0f)
 	{
-		CurrentCapturePercentage = 0.0f;
+		NotifyPointNeutralised(AttackingTeam);
 
-		if (!DefendingTeam.IsEqual("Neutral"))
-		{
-			FString LogStr = AttackingTeam.ToString();
-			UE_LOG(LogTemp, Log, TEXT("%s team have neutralised a capture point!"), *LogStr);
-		}
-
-		// Reset the state back to Neutral
 		DefendingTeam = "Neutral";
-		AttackingTeam = "";
 		CapturingTeam = "";
 	}
-	else if (CurrentCapturePercentage >= 100.0f)
+	else if (CurrentCapturePercentage >= 100.0f && !CapturingTeam.IsEqual(""))
 	{
-		CurrentCapturePercentage = 100.0f;
+		NotifyPointCaptured(CapturingTeam);
+		
+		DefendingTeam = CapturingTeam;
+		CapturingTeam = "";
 
-		// If true the point was captured from neutral (Either for the first time or from another team). If false then the defending team simply restored it back to 100% ownership without losing control
-		if (!CapturingTeam.IsEqual(""))
-		{
-			FString LogStr = CapturingTeam.ToString();
-			UE_LOG(LogTemp, Log, TEXT("%s team have captured a point!"), *LogStr);
-
-			DefendingTeam = CapturingTeam;
-			CapturingTeam = "";
-
-			if (DefendingTeam.IsEqual("Blue"))
-			{
-				AttackingTeam = "Red";
-			}
-			else
-			{
-				AttackingTeam = "Blue";
-			}
-		}
+		AttackingTeam = CapturingTeam.IsEqual("Blue") ? "Red" : "Blue";
 	}
+}
+
+bool ACGCapturePoint::IsUncaptured()
+{
+	return DefendingTeam.IsEqual("Neutral") && CapturingTeam.IsEqual("");
 }
 
 bool ACGCapturePoint::ServerUpdateCaptureProgress_Validate(float DeltaTime)
@@ -202,7 +157,7 @@ bool ACGCapturePoint::ServerUpdateCaptureProgress_Validate(float DeltaTime)
 	return true;
 }
 
-void ACGCapturePoint::GetNumOverlappingPlayers(uint32& OutNumBluePlayers, uint32& OutNumRedPlayers)
+void ACGCapturePoint::GetNumOverlappingPlayers(uint8& OutNumBluePlayers, uint8& OutNumRedPlayers)
 {
 	TArray<AActor*> OverlappedActors;
 
@@ -245,7 +200,7 @@ void ACGCapturePoint::HandleEndOverlap(UPrimitiveComponent* OverlappedComponent,
 
 	if (Player)
 	{
-		Player->NotifyEndOverlapCapturePoint(this);
+		Player->NotifyEndOverlapCapturePoint();
 	}
 }
 

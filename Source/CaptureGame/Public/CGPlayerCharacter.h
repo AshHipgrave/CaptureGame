@@ -72,7 +72,7 @@ public:
 	void NotifyBeginOverlapCapturePoint(ACGCapturePoint* CapturePoint);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Capture Points")
-	void NotifyEndOverlapCapturePoint(ACGCapturePoint* CapturePoint);
+	void NotifyEndOverlapCapturePoint();
 
 	FName GetTeamName();
 
