@@ -17,7 +17,7 @@ ACGCapturePoint::ACGCapturePoint()
 	OverlapComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	OverlapComp->SetCollisionResponseToAllChannels(ECR_Ignore);
 	OverlapComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	
+
 	OverlapComp->SetBoxExtent(FVector(200.0f));
 	OverlapComp->SetupAttachment(MeshComp);
 
@@ -28,12 +28,6 @@ ACGCapturePoint::ACGCapturePoint()
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CapturePointMeshComp"));
 	MeshComp->SetupAttachment(OverlapComp);
-
-	/* TODO: Calculate progmatically based off of the number of overlapping players */
-	CaptureRates.Add(5.0f);		// Takes 20 seconds for 1 Player to capture the point
-	CaptureRates.Add(6.25f);	// Takes 16 Seconds for 2 Players
-	CaptureRates.Add(8.33f);	// Takes 12 Seconds for 3 Players
-	CaptureRates.Add(12.5f);	// Takes 8 Seconds for 4 Players
 	
 	CapturePointName = "DefaultName";
 
@@ -41,7 +35,6 @@ ACGCapturePoint::ACGCapturePoint()
 	CapturingTeam = "";
 	AttackingTeam = "";
 
-	CurrentCaptureRate = 0.0f;
 	CurrentCapturePercentage = 0.0f;
 
 	bReplicates = true;
@@ -53,7 +46,7 @@ ACGCapturePoint::ACGCapturePoint()
 void ACGCapturePoint::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 void ACGCapturePoint::Tick(float DeltaTime)
@@ -83,13 +76,11 @@ FName ACGCapturePoint::GetDefendingTeamName()
 
 void ACGCapturePoint::ServerUpdateCaptureProgress_Implementation(float DeltaTime)
 {
-	float CaptureSpeed = 0.0f;
+	int NumAttackers = 0;
+	int NumDefenders = 0;
 
-	uint8 NumAttackers = 0;
-	uint8 NumDefenders = 0; 
-	
-	uint8 RedPlayersInCaptureRange = 0;
-	uint8 BluePlayersInCaptureRange = 0;
+	int RedPlayersInCaptureRange = 0;
+	int BluePlayersInCaptureRange = 0;
 
 	GetNumOverlappingPlayers(BluePlayersInCaptureRange, RedPlayersInCaptureRange);
 
@@ -102,32 +93,24 @@ void ACGCapturePoint::ServerUpdateCaptureProgress_Implementation(float DeltaTime
 	{
 		CapturingTeam = BluePlayersInCaptureRange > RedPlayersInCaptureRange ? "Blue" : "Red";
 	}
-	
+
 	NumAttackers = GetDefendingTeamName().IsEqual("Blue") ? RedPlayersInCaptureRange : BluePlayersInCaptureRange;
 	NumDefenders = GetDefendingTeamName().IsEqual("Blue") ? BluePlayersInCaptureRange : RedPlayersInCaptureRange;
 
-	if (CurrentCapturePercentage >= 100.0f && NumDefenders > NumAttackers)
+	if (CurrentCapturePercentage >= 100.0f && NumDefenders >= NumAttackers)
 	{
 		return;
 	}
 
-	//Only allow a majority of +/- 4 players per team to influence the capture rate
-	CaptureSpeed = FMath::Clamp((NumDefenders - NumAttackers), -4, 4);
+	//Only allow a majority of 4 players per team to influence the capture rate
+	NumAttackers = FMath::Clamp(NumAttackers, 0, 4);
+	NumDefenders = FMath::Clamp(NumDefenders, 0, 4);
 
-	uint8 CaptureSpeedIdx = 0;
+	CurrentCapturePercentage += CalculateCaptureRate(NumDefenders, NumAttackers) * DeltaTime;
 
-	if (CaptureSpeed < 0)
-	{
-		CaptureSpeedIdx = (CaptureSpeed * -1) - 1;
+	FString CaptureProgressStr = FString::SanitizeFloat(CurrentCapturePercentage);
 
-		CurrentCapturePercentage -= CaptureRates[CaptureSpeedIdx] * DeltaTime;
-	}
-	else if (CaptureSpeed > 0)
-	{
-		CaptureSpeedIdx = CaptureSpeed - 1;
-
-		CurrentCapturePercentage += CaptureRates[CaptureSpeedIdx] * DeltaTime;
-	}
+	UE_LOG(LogTemp, Log, TEXT("Capture Progress = %s"), *CaptureProgressStr);
 
 	if (CurrentCapturePercentage <= 0.0f)
 	{
@@ -147,6 +130,16 @@ void ACGCapturePoint::ServerUpdateCaptureProgress_Implementation(float DeltaTime
 	}
 }
 
+int ACGCapturePoint::CalculateCaptureRate(int numDefenders, int numAttackers)
+{
+	if (numDefenders > numAttackers)
+	{
+		return -4 * ((numDefenders - numAttackers) - 6);
+	}
+	
+	return 4 * ((numAttackers - numDefenders) - 6);
+}
+
 bool ACGCapturePoint::IsUncaptured()
 {
 	return DefendingTeam.IsEqual("Neutral") && CapturingTeam.IsEqual("");
@@ -157,7 +150,7 @@ bool ACGCapturePoint::ServerUpdateCaptureProgress_Validate(float DeltaTime)
 	return true;
 }
 
-void ACGCapturePoint::GetNumOverlappingPlayers(uint8& OutNumBluePlayers, uint8& OutNumRedPlayers)
+void ACGCapturePoint::GetNumOverlappingPlayers(int& OutNumBluePlayers, int& OutNumRedPlayers)
 {
 	TArray<AActor*> OverlappedActors;
 

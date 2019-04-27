@@ -25,7 +25,9 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerUpdateCaptureProgress(float DeltaTime);
 	
-	void GetNumOverlappingPlayers(uint8& OutNumBluePlayers, uint8& OutNumRedPlayers);
+	void GetNumOverlappingPlayers(int& OutNumBluePlayers, int& OutNumRedPlayers);
+
+	int CalculateCaptureRate(int numDefenders, int numAttackers);
 
 	bool IsUncaptured();
 
@@ -45,15 +47,10 @@ protected:
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Capture Behaviour")
 	FName CapturePointName;
-
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Capture Behaviour")
-	TArray<float> CaptureRates;
-
+	
 	UPROPERTY(Replicated, VisibleDefaultsOnly, BlueprintReadOnly, Category = "Capture Behaviour")
 	float CurrentCapturePercentage;
-
-	float CurrentCaptureRate;
-
+	
 	UPROPERTY(Replicated)
 	FName DefendingTeam;
 
